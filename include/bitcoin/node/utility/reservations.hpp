@@ -93,7 +93,7 @@ protected:
     size_t unreserved() const;
 
 private:
-    ////void dump_table(size_t slot) const;
+    void dump_table(size_t slot) const;
 
     // Thread safe.
     check_list hashes_;
