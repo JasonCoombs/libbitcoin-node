@@ -66,7 +66,7 @@ void reservations::push_front(hash_digest&& hash, size_t height)
 
 ////// private
 ////// Dump the current table and reservation sizes to the log.
-/*void reservations::dump_table(size_t slot) const
+void reservations::dump_table(size_t slot) const
 {
     for (auto row: table_)
     {
@@ -78,7 +78,6 @@ void reservations::push_front(hash_digest&& hash, size_t height)
             << " rate: " << row->rate().rate();
     }
 }
-*/
 
 reservation::ptr reservations::get()
 {
@@ -103,7 +102,7 @@ reservation::ptr reservations::get()
     {
         (*it)->start();
 
-        ////dump_table((*it)->slot());
+        dump_table((*it)->slot());
         return *it;
     }
 
@@ -113,7 +112,7 @@ reservation::ptr reservations::get()
     table_.push_back(row);
     row->start();
 
-    ////dump_table(row->slot());
+    dump_table(row->slot());
     return row;
     ///////////////////////////////////////////////////////////////////////////
 }

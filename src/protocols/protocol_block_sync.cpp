@@ -77,8 +77,8 @@ void protocol_block_sync::send_get_blocks()
     // Don't start downloading blocks until the header chain is current.
     // This protects against disk fill and allows hashes to be distributed.
 // BUG: default to 24 hours before the candidate is stale? what?? also, is this formerly candidates_stale() but now confirmed_stale() instead?? (a kind of flag inversion?)
-    if (chain_.is_candidates_stale())
-        return;
+//    if (chain_.is_candidates_stale())
+//        return;
 
     // Repopulate if empty and new work has arrived.
     const auto request = reservation_->request();
