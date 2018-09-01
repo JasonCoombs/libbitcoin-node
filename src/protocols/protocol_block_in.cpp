@@ -166,12 +166,12 @@ void protocol_block_in::handle_fetch_header_locator(const code& ec,
 // This originates from default annoucements and get_blocks requests, or from
 // an unsolicited announcement. There is no way to distinguish.
 bool protocol_block_in::handle_receive_inventory(const code& ec,
-    inventory_const_ptr message)
+    inventory_ptr message)
 {
     if (stopped(ec))
         return false;
 
-    const auto response = std::make_shared<get_data>();
+    auto response = std::make_shared<get_data>();
     message->reduce(response->inventories(), inventory::type_id::block);
 
     if (response->inventories().size() > max_get_blocks)
@@ -222,7 +222,7 @@ void protocol_block_in::send_get_data(const code& ec, get_data_ptr message)
 
 // TODO: move not_found to a derived class protocol_block_in_70001.
 bool protocol_block_in::handle_receive_not_found(const code& ec,
-    not_found_const_ptr message)
+    not_found_ptr message)
 {
     if (stopped(ec))
         return false;
@@ -239,7 +239,7 @@ bool protocol_block_in::handle_receive_not_found(const code& ec,
     hash_list hashes;
     message->to_hashes(hashes, inventory::type_id::block);
 
-    for (const auto& hash: hashes)
+    for (auto& hash: hashes)
     {
         LOG_DEBUG(LOG_NODE)
             << "Block not_found [" << encode_hash(hash) << "] from ["
@@ -467,7 +467,7 @@ inline size_t total_cost_ms(const asio::time_point& start,
     return unit_cost(start, end, microseconds_per_millisecond);
 }
 
-void protocol_block_in::report(const chain::block& block, size_t height)
+void protocol_block_in::report(chain::block& block, size_t height)
 {
     if (enabled(height))
     {

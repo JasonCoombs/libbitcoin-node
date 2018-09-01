@@ -71,6 +71,8 @@ void protocol_block_sync::start()
 
 void protocol_block_sync::send_get_blocks()
 {
+    const auto this_id = boost::this_thread::get_id();
+
     if (stopped())
         return;
 
@@ -88,7 +90,8 @@ void protocol_block_sync::send_get_blocks()
         return;
 
     LOG_DEBUG(LOG_NODE)
-        << "Sending request of " << request.inventories().size()
+        << this_id
+        << " Sending request of " << request.inventories().size()
         << " hashes for slot (" << reservation_->slot() << ").";
 
     SEND2(request, handle_send, _1, request.command);
@@ -97,6 +100,15 @@ void protocol_block_sync::send_get_blocks()
 bool protocol_block_sync::handle_receive_block(const code& ec,
     block_const_ptr message)
 {
+    const auto this_id = boost::this_thread::get_id();
+    LOG_VERBOSE(LOG_NODE)
+    << this_id
+    << " node::protocol_block_sync::handle_receive_block"
+    << " this = " << this
+    << " chain = "
+    << &chain_
+    << " from block @ (block_const_ptr message) = " << &message;
+
     if (stopped(ec))
         return false;
 
@@ -149,6 +161,10 @@ bool protocol_block_sync::handle_receive_block(const code& ec,
         stop(code);
         return false;
     }
+
+    LOG_VERBOSE(LOG_NODE)
+    << this_id
+    << " calling send_get_blocks()";
 
     send_get_blocks();
     return true;

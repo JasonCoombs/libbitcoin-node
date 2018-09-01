@@ -123,8 +123,8 @@ bool executor::do_initchain()
     {
         LOG_INFO(LOG_NODE) << format(BN_INITIALIZING_CHAIN) % directory;
 
-        const auto& bitcoin_settings = metadata_.configured.bitcoin;
-        const auto result = data_base(metadata_.configured.database)
+        auto& bitcoin_settings = metadata_.configured.bitcoin;
+        auto result = data_base(metadata_.configured.database)
             .create(bitcoin_settings.genesis_block);
 
         LOG_INFO(LOG_NODE) << BN_INITCHAIN_COMPLETE;

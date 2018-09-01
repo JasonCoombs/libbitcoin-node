@@ -38,9 +38,9 @@ using namespace bc::network;
 using namespace std::placeholders;
 
 // This creates pointer without copying the element and without destruct.
-static std::shared_ptr<const header> unsafe_pointer(const header& element)
+static std::shared_ptr<header> unsafe_pointer(header& element)
 {
-    return std::shared_ptr<const header>(&element, [](const header*) {});
+    return std::shared_ptr<header>(&element, [](header*) {});
 }
 
 protocol_header_in::protocol_header_in(full_node& node, channel::ptr channel,

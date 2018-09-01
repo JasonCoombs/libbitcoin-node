@@ -40,7 +40,7 @@ using namespace boost::program_options;
 using namespace bc::config;
 
 // Initialize configuration by copying the given instance.
-parser::parser(const configuration& defaults)
+parser::parser(configuration& defaults)
   : configured(defaults)
 {
 }
