@@ -40,7 +40,7 @@ using namespace bc::network;
 using namespace boost::adaptors;
 using namespace std::placeholders;
 
-full_node::full_node(const configuration& configuration)
+full_node::full_node(configuration& configuration)
   : p2p(configuration.network),
     reservations_(configuration.network.minimum_connections(),
         configuration.node.maximum_deviation,
