@@ -71,16 +71,13 @@ void protocol_block_sync::start()
 
 void protocol_block_sync::send_get_blocks()
 {
-    const auto this_id = boost::this_thread::get_id();
-
     if (stopped())
         return;
 
     // Don't start downloading blocks until the header chain is current.
     // This protects against disk fill and allows hashes to be distributed.
-// BUG: default to 24 hours before the candidate is stale? what?? also, is this formerly candidates_stale() but now confirmed_stale() instead?? (a kind of flag inversion?)
-//    if (chain_.is_candidates_stale())
-//        return;
+    if (chain_.is_candidates_stale())
+        return;
 
     // Repopulate if empty and new work has arrived.
     const auto request = reservation_->request();
@@ -90,8 +87,7 @@ void protocol_block_sync::send_get_blocks()
         return;
 
     LOG_DEBUG(LOG_NODE)
-        << this_id
-        << " Sending request of " << request.inventories().size()
+        << "Sending request of " << request.inventories().size()
         << " hashes for slot (" << reservation_->slot() << ").";
 
     SEND2(request, handle_send, _1, request.command);
@@ -100,15 +96,6 @@ void protocol_block_sync::send_get_blocks()
 bool protocol_block_sync::handle_receive_block(const code& ec,
     block_const_ptr message)
 {
-    const auto this_id = boost::this_thread::get_id();
-    LOG_VERBOSE(LOG_NODE)
-    << this_id
-    << " node::protocol_block_sync::handle_receive_block"
-    << " this = " << this
-    << " chain = "
-    << &chain_
-    << " from block @ (block_const_ptr message) = " << &message;
-
     if (stopped(ec))
         return false;
 
@@ -161,10 +148,6 @@ bool protocol_block_sync::handle_receive_block(const code& ec,
         stop(error_code);
         return false;
     }
-
-    LOG_VERBOSE(LOG_NODE)
-    << this_id
-    << " calling send_get_blocks()";
 
     send_get_blocks();
     return true;

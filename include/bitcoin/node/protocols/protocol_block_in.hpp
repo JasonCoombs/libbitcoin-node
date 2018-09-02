@@ -48,14 +48,14 @@ protected:
     using network::protocol_timer::start;
 
 private:
-    static void report(chain::block& block, size_t height);
+    static void report(const chain::block& block, size_t height);
 
     void send_get_blocks(const hash_digest& stop_hash);
     void send_get_data(const code& ec, get_data_ptr message);
 
     bool handle_receive_block(const code& ec, block_const_ptr message);
-    bool handle_receive_inventory(const code& ec, inventory_ptr message);
-    bool handle_receive_not_found(const code& ec, not_found_ptr message);
+    bool handle_receive_inventory(const code& ec, inventory_const_ptr message);
+    bool handle_receive_not_found(const code& ec, not_found_const_ptr message);
     void handle_store_block(const code& ec, size_t height,
         block_const_ptr message);
     void handle_fetch_header_locator(const code& ec, get_blocks_ptr message,

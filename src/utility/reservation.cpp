@@ -312,15 +312,6 @@ bool reservation::find_height_and_erase(const hash_digest& hash,
 code reservation::import(safe_chain& chain, block_const_ptr block,
     size_t height)
 {
-    const auto this_id = boost::this_thread::get_id();
-    LOG_VERBOSE(LOG_NODE)
-    << this_id
-    << " node::reservation::import() height " << height
-    << " this = " << this
-    << " chain = " << &chain
-    << " from block @ "
-    << &block;
-
     const auto start = now();
 
     //#########################################################################

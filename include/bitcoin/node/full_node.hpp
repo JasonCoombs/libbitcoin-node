@@ -41,7 +41,7 @@ public:
     typedef blockchain::block_chain::transaction_handler transaction_handler;
 
     /// Construct the full node.
-    full_node(configuration& configuration);
+    full_node(const configuration& configuration);
 
     /// Ensure all threads are coalesced.
     virtual ~full_node();

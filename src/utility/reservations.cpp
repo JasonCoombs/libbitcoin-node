@@ -48,12 +48,12 @@ reservations::reservations(size_t minimum_peer_count, float maximum_deviation,
 {
 }
 
-void reservations::pop_back(chain::header& header, size_t height)
+void reservations::pop_back(const chain::header& header, size_t height)
 {
     hashes_.pop_back(header.hash(), height);
 }
 
-void reservations::push_back(chain::header& header, size_t height)
+void reservations::push_back(const chain::header& header, size_t height)
 {
     if (!header.metadata.populated)
         hashes_.push_back(header.hash(), height);
@@ -66,18 +66,18 @@ void reservations::push_front(hash_digest&& hash, size_t height)
 
 ////// private
 ////// Dump the current table and reservation sizes to the log.
-void reservations::dump_table(size_t slot) const
-{
-    for (auto row: table_)
-    {
-        LOG_DEBUG(LOG_NODE)
-            << slot
-            << " slot: " << row->slot()
-            << " size: " << row->size()
-            << " stop: " << row->stopped()
-            << " rate: " << row->rate().rate();
-    }
-}
+////void reservations::dump_table(size_t slot) const
+////{
+////    for (auto row: table_)
+////    {
+////        LOG_DEBUG(LOG_NODE)
+////            << slot
+////            << " slot: " << row->slot()
+////            << " size: " << row->size()
+////            << " stop: " << row->stopped()
+////            << " rate: " << row->rate().rate();
+////    }
+////}
 
 reservation::ptr reservations::get()
 {
@@ -102,7 +102,7 @@ reservation::ptr reservations::get()
     {
         (*it)->start();
 
-        dump_table((*it)->slot());
+        ////dump_table((*it)->slot());
         return *it;
     }
 
@@ -112,7 +112,7 @@ reservation::ptr reservations::get()
     table_.push_back(row);
     row->start();
 
-    dump_table(row->slot());
+    ////dump_table(row->slot());
     return row;
     ///////////////////////////////////////////////////////////////////////////
 }
@@ -144,8 +144,6 @@ reservation::list reservations::table() const
 // protected
 bool reservations::reserve(reservation::ptr minimal)
 {
-    const auto this_id = boost::this_thread::get_id();
-
     // Intitialize the row set as late as possible.
     if (!initialized_)
     {
@@ -161,8 +159,7 @@ bool reservations::reserve(reservation::ptr minimal)
     if (!minimal->empty())
     {
         LOG_DEBUG(LOG_NODE)
-            << this_id
-            << " Minimal (" << minimal ->slot() << ") is not empty.";
+            << "Minimal (" << minimal ->slot() << ") is not empty.";
         return true;
     }
 
@@ -177,8 +174,7 @@ bool reservations::reserve(reservation::ptr minimal)
     if (reserved)
     {
         LOG_DEBUG(LOG_NODE)
-            << this_id
-            << " Reserved " << minimal->size() << " blocks to slot ("
+            << "Reserved " << minimal->size() << " blocks to slot ("
             << minimal->slot() << ").";
     }
 

@@ -34,7 +34,7 @@ class BCN_API parser
 {
 public:
     parser(config::settings context);
-    parser(configuration& defaults);
+    parser(const configuration& defaults);
 
     /// Parse all configuration into member settings.
     virtual bool parse(int argc, const char* argv[], std::ostream& error);
