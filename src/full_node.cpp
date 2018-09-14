@@ -40,7 +40,7 @@ using namespace bc::network;
 using namespace boost::adaptors;
 using namespace std::placeholders;
 
-full_node::full_node(const configuration& configuration)
+full_node::full_node( configuration& configuration)
   : p2p(configuration.network),
     reservations_(configuration.network.minimum_connections(),
         configuration.node.maximum_deviation,
@@ -150,7 +150,7 @@ void full_node::handle_running(const code& ec, result_handler handler)
         << "Top candidate block height is (" << top_candidate_height << ").";
 
     hash_digest hash;
-    const auto top_valid_candidate_height =
+     auto top_valid_candidate_height =
         chain_.top_valid_candidate_state()->height();
 
     LOG_INFO(LOG_NODE)

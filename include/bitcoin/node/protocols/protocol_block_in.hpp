@@ -48,7 +48,7 @@ protected:
     using network::protocol_timer::start;
 
 private:
-    static void report(const chain::block& block, size_t height);
+    static void report( chain::block& block, size_t height);
 
     void send_get_blocks(const hash_digest& stop_hash);
     void send_get_data(const code& ec, get_data_ptr message);

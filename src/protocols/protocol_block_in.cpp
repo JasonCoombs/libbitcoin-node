@@ -171,7 +171,7 @@ bool protocol_block_in::handle_receive_inventory(const code& ec,
     if (stopped(ec))
         return false;
 
-    const auto response = std::make_shared<get_data>();
+     auto response = std::make_shared<get_data>();
     message->reduce(response->inventories(), inventory::type_id::block);
 
     if (response->inventories().size() > max_get_blocks)
@@ -239,7 +239,7 @@ bool protocol_block_in::handle_receive_not_found(const code& ec,
     hash_list hashes;
     message->to_hashes(hashes, inventory::type_id::block);
 
-    for (const auto& hash: hashes)
+    for ( auto& hash: hashes)
     {
         LOG_DEBUG(LOG_NODE)
             << "Block not_found [" << encode_hash(hash) << "] from ["
@@ -467,7 +467,7 @@ inline size_t total_cost_ms(const asio::time_point& start,
     return unit_cost(start, end, microseconds_per_millisecond);
 }
 
-void protocol_block_in::report(const chain::block& block, size_t height)
+void protocol_block_in::report( chain::block& block, size_t height)
 {
     if (enabled(height))
     {

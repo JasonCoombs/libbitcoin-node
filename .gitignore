@@ -4,12 +4,14 @@
 *.lo
 *.o
 *.pyc
+*.pc
 Makefile
 Makefile.in
 libbitcoin-node.pc
 
 bin
 obj
+diff.*
 .*.swp
 *~
 /*.kdev4

@@ -48,12 +48,12 @@ reservations::reservations(size_t minimum_peer_count, float maximum_deviation,
 {
 }
 
-void reservations::pop_back(const chain::header& header, size_t height)
+void reservations::pop_back( chain::header& header, size_t height)
 {
     hashes_.pop_back(header.hash(), height);
 }
 
-void reservations::push_back(const chain::header& header, size_t height)
+void reservations::push_back( chain::header& header, size_t height)
 {
     if (!header.metadata.populated)
         hashes_.push_back(header.hash(), height);
