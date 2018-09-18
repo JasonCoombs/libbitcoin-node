@@ -25,18 +25,70 @@
 namespace libbitcoin {
 namespace node {
 
-// Construct with defaults derived from given context.
-configuration::configuration(config::settings context)
-  : help(false),
-    initchain(false),
-    settings(false),
-    version(false),
-    node(context),
-    chain(context),
-    database(context),
-    network(context),
-    bitcoin(context)
+// Construct with defaults and no context
+configuration::configuration()
 {
+    help = false;
+    initchain = false;
+    regtest = false;
+    testnet = false;
+    settings = false;
+    version = false;
+    node = NULL;
+    chain = NULL;
+    database = NULL;
+    network = NULL;
+    bitcoin = NULL;
+}
+
+configuration::~configuration()
+{
+    if (node)
+        delete node;
+    if (chain)
+        delete chain;
+    if (database)
+        delete database;
+    if (network)
+        delete network;
+    if (bitcoin)
+        delete bitcoin;
+    }
+
+// Initialize for the given context
+void configuration::init(config::settings context)
+{
+    node = new node::settings(context);
+    chain = new blockchain::settings(context);
+    database = new database::settings(context);
+    network = new network::settings(context);
+    bitcoin = new libbitcoin::settings(context);
+    
+    using serve = message::version::service;
+
+    if (database)
+    {
+        // A node doesn't use history, and history is expensive.
+        database->index_addresses = false;
+    }
+
+    if (network)
+    {
+        // Logs will slow things if not rotated.
+        network->rotation_size = 10000000;
+
+        // It is a public network.
+        network->inbound_connections = 100;
+        
+        // Optimal for sync and network penetration.
+        network->outbound_connections = 8;
+        
+        // A node allows 10000 host names by default.
+        network->host_pool_capacity = 10000;
+        
+        // Expose full node (1) and witness (8) network services by default.
+        network->services = serve::node_network | serve::node_witness;
+    }
 }
 
 } // namespace node

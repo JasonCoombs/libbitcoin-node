@@ -23,6 +23,8 @@
 #include <iostream>
 #include <bitcoin/node.hpp>
 
+extern libbitcoin::node::configuration configured;
+
 namespace libbitcoin {
 namespace node {
 

@@ -41,13 +41,20 @@ namespace node {
 
 /// Full node configuration, thread safe.
 class BCN_API configuration
+    : public config::configuration
 {
 public:
-    configuration(config::settings context);
+    // Construct with defaults and no context
+    configuration();
+    ~configuration();
+    // Initialize for the given context
+    void init(config::settings context);
 
     /// Options.
     bool help;
     bool initchain;
+    bool regtest;
+    bool testnet;
     bool settings;
     bool version;
 
@@ -55,11 +62,11 @@ public:
     boost::filesystem::path file;
 
     /// Settings.
-    node::settings node;
-    blockchain::settings chain;
-    database::settings database;
-    network::settings network;
-    libbitcoin::settings bitcoin;
+    node::settings *node;
+    blockchain::settings *chain;
+    database::settings *database;
+    network::settings *network;
+    libbitcoin::settings *bitcoin;
 };
 
 } // namespace node

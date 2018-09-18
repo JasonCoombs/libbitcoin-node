@@ -40,82 +40,86 @@ using namespace boost::program_options;
 using namespace bc::config;
 
 // Initialize configuration by copying the given instance.
-parser::parser( configuration& defaults)
-  : configured(defaults)
+parser::parser(configuration& configured)
 {
 }
 
-// Initialize configuration using defaults of the given context.
-parser::parser(config::settings context)
-  : configured(context)
+// Load command line options (named).
+options_metadata parser::load_options(config::configuration *pconf)
 {
-    using serve = message::version::service;
+    if (!pconf)
+    {
+        options_metadata om;
+        return om;
+    }
 
-    // A node doesn't use history, and history is expensive.
-    configured.database.index_addresses = false;
-
-    // Logs will slow things if not rotated.
-    configured.network.rotation_size = 10000000;
-
-    // It is a public network.
-    configured.network.inbound_connections = 100;
-
-    // Optimal for sync and network penetration.
-    configured.network.outbound_connections = 8;
-
-    // A node allows 10000 host names by default.
-    configured.network.host_pool_capacity = 10000;
-
-    // Expose full node (1) and witness (8) network services by default.
-    configured.network.services = serve::node_network | serve::node_witness;
-}
-
-options_metadata parser::load_options()
-{
-    options_metadata description("options");
-    description.add_options()
-    (
-        BN_CONFIG_VARIABLE ",c",
-        value<path>(&configured.file),
-        "Specify path to a configuration settings file."
-    )
-    (
-        BN_HELP_VARIABLE ",h",
-        value<bool>(&configured.help)->
-            default_value(false)->zero_tokens(),
-        "Display command line options."
-    )
-    (
-        "initchain,i",
-        value<bool>(&configured.initchain)->
-            default_value(false)->zero_tokens(),
-        "Initialize blockchain in the configured directory."
-    )
-    (
-        BN_SETTINGS_VARIABLE ",s",
-        value<bool>(&configured.settings)->
-            default_value(false)->zero_tokens(),
-        "Display all configuration settings."
-    )
-    (
-        BN_VERSION_VARIABLE ",v",
-        value<bool>(&configured.version)->
-            default_value(false)->zero_tokens(),
-        "Display version information."
-    );
-
+    node::configuration *nodeconf = (node::configuration *)pconf;
+        options_metadata description("options");
+        description.add_options()
+        (
+         BN_VERSION_VARIABLE ",v",
+         value<bool>(&nodeconf->version)->
+         default_value(false)->zero_tokens(),
+         "Display version information."
+         )
+        (
+         BN_CONFIG_VARIABLE ",c",
+         value<path>(&nodeconf->file),
+         "Specify path to a configuration settings file."
+         )
+        (
+         BN_SETTINGS_VARIABLE ",s",
+         value<bool>(&nodeconf->settings)->
+         default_value(false)->zero_tokens(),
+         "Display all configuration settings."
+         )
+        (
+         BN_HELP_VARIABLE ",h",
+         value<bool>(&nodeconf->help)->
+         default_value(false)->zero_tokens(),
+         "Display command line options."
+         )
+        (
+         "initchain,i",
+         value<bool>(&nodeconf->initchain)->
+         default_value(false)->zero_tokens(),
+         "Initialize blockchain in the configured directory."
+         )
+        (
+         "regtest,r",
+         value<bool>(&nodeconf->regtest)->
+         default_value(false)->zero_tokens(),
+         "Use the testnet configuration and genesis block."
+         )
+        (
+         "testnet,t",
+         value<bool>(&nodeconf->testnet)->
+         default_value(false)->zero_tokens(),
+         "Use the testnet configuration and genesis block."
+        );
+        
     return description;
 }
-
+    
+// Load command line arguments (positional).
 arguments_metadata parser::load_arguments()
 {
     arguments_metadata description;
     return description
-        .add(BN_CONFIG_VARIABLE, 1);
+    .add(BN_CONFIG_VARIABLE, 1);
 }
 
-options_metadata parser::load_environment()
+options_metadata parser::load_environment(config::configuration *pconf)
 {
+    options_metadata om;
+
+    if (!pconf)
+    {
+        return om;
+    }
+
+    node::configuration *nodeconf = (node::configuration *)pconf;
+    
     options_metadata description("environment");
     description.add_options()
     (
@@ -123,400 +127,377 @@ options_metadata parser::load_environment()
         // The case must match the other declarations for it to compose.
         // This composes with the cmdline options and inits to system path.
         BN_CONFIG_VARIABLE,
-        value<path>(&configured.file)->composing()
+        value<path>(&nodeconf->file)->composing()
             ->default_value(config_default_path()),
         "The path to the configuration settings file."
     );
-
     return description;
 }
 
-options_metadata parser::load_settings()
+options_metadata parser::load_settings(config::configuration *pconf)
 {
+    options_metadata om;
+    if (!pconf)
+    {
+        return om;
+    }
+
+    node::configuration *nodeconf = (node::configuration *)pconf;
+
+    if (!nodeconf->network || !nodeconf->database || !nodeconf->chain || !nodeconf->node)
+    {
+        return om;
+    }
+
     options_metadata description("settings");
     description.add_options()
     /* [log] */
     (
         "log.debug_file",
-        value<path>(&configured.network.debug_file),
+        value<path>(&nodeconf->network->debug_file),
         "The debug log file path, defaults to 'debug.log'."
     )
     (
         "log.error_file",
-        value<path>(&configured.network.error_file),
+        value<path>(&nodeconf->network->error_file),
         "The error log file path, defaults to 'error.log'."
     )
     (
         "log.archive_directory",
-        value<path>(&configured.network.archive_directory),
+        value<path>(&nodeconf->network->archive_directory),
         "The log archive directory, defaults to 'archive'."
     )
     (
         "log.rotation_size",
-        value<size_t>(&configured.network.rotation_size),
+        value<size_t>(&nodeconf->network->rotation_size),
         "The size at which a log is archived, defaults to 10000000 (0 disables)."
     )
     (
         "log.minimum_free_space",
-        value<size_t>(&configured.network.minimum_free_space),
+        value<size_t>(&nodeconf->network->minimum_free_space),
         "The minimum free space required in the archive directory, defaults to 0."
     )
     (
         "log.maximum_archive_size",
-        value<size_t>(&configured.network.maximum_archive_size),
+        value<size_t>(&nodeconf->network->maximum_archive_size),
         "The maximum combined size of archived logs, defaults to 0 (maximum)."
     )
     (
         "log.maximum_archive_files",
-        value<size_t>(&configured.network.maximum_archive_files),
+        value<size_t>(&nodeconf->network->maximum_archive_files),
         "The maximum number of logs to archive, defaults to 0 (maximum)."
     )
     (
         "log.statistics_server",
-        value<config::authority>(&configured.network.statistics_server),
+        value<config::authority>(&nodeconf->network->statistics_server),
         "The address of the statistics collection server, defaults to none."
     )
     (
         "log.verbose",
-        value<bool>(&configured.network.verbose),
+        value<bool>(&nodeconf->network->verbose),
         "Enable verbose logging, defaults to false."
     )
     /* [network] */
     (
         "network.threads",
-        value<uint32_t>(&configured.network.threads),
+        value<uint32_t>(&nodeconf->network->threads),
         "The minimum number of threads in the network threadpool, defaults to 0 (physical cores)."
     )
     (
         "network.protocol_maximum",
-        value<uint32_t>(&configured.network.protocol_maximum),
+        value<uint32_t>(&nodeconf->network->protocol_maximum),
         "The maximum network protocol version, defaults to 70013."
     )
     (
         "network.protocol_minimum",
-        value<uint32_t>(&configured.network.protocol_minimum),
+        value<uint32_t>(&nodeconf->network->protocol_minimum),
         "The minimum network protocol version, defaults to 31402."
     )
     (
         "network.services",
-        value<uint64_t>(&configured.network.services),
+        value<uint64_t>(&nodeconf->network->services),
         "The services exposed by network connections, defaults to 9 (full node, witness)."
     )
     (
         "network.invalid_services",
-        value<uint64_t>(&configured.network.invalid_services),
+        value<uint64_t>(&nodeconf->network->invalid_services),
         "The advertised services that cause a peer to be dropped, defaults to 176."
     )
     (
         "network.validate_checksum",
-        value<bool>(&configured.network.validate_checksum),
+        value<bool>(&nodeconf->network->validate_checksum),
         "Validate the checksum of network messages, defaults to false."
     )
     (
         "network.identifier",
-        value<uint32_t>(&configured.network.identifier),
+        value<uint32_t>(&nodeconf->network->identifier),
         "The magic number for message headers, defaults to 3652501241."
     )
     (
         "network.inbound_port",
-        value<uint16_t>(&configured.network.inbound_port),
+        value<uint16_t>(&nodeconf->network->inbound_port),
         "The port for incoming connections, defaults to 8333."
     )
     (
         "network.inbound_connections",
-        value<uint32_t>(&configured.network.inbound_connections),
+        value<uint32_t>(&nodeconf->network->inbound_connections),
         "The target number of incoming network connections, defaults to 0."
     )
     (
         "network.outbound_connections",
-        value<uint32_t>(&configured.network.outbound_connections),
+        value<uint32_t>(&nodeconf->network->outbound_connections),
         "The target number of outgoing network connections, defaults to 2."
     )
     (
         "network.manual_attempt_limit",
-        value<uint32_t>(&configured.network.manual_attempt_limit),
+        value<uint32_t>(&nodeconf->network->manual_attempt_limit),
         "The attempt limit for manual connection establishment, defaults to 0 (forever)."
     )
     (
         "network.connect_batch_size",
-        value<uint32_t>(&configured.network.connect_batch_size),
+        value<uint32_t>(&nodeconf->network->connect_batch_size),
         "The number of concurrent attempts to establish one connection, defaults to 5."
     )
     (
         "network.connect_timeout_seconds",
-        value<uint32_t>(&configured.network.connect_timeout_seconds),
+        value<uint32_t>(&nodeconf->network->connect_timeout_seconds),
         "The time limit for connection establishment, defaults to 5."
     )
     (
         "network.channel_handshake_seconds",
-        value<uint32_t>(&configured.network.channel_handshake_seconds),
+        value<uint32_t>(&nodeconf->network->channel_handshake_seconds),
         "The time limit to complete the connection handshake, defaults to 30."
     )
     (
         "network.channel_germination_seconds",
-        value<uint32_t>(&configured.network.channel_germination_seconds),
+        value<uint32_t>(&nodeconf->network->channel_germination_seconds),
         "The time limit for obtaining seed addresses, defaults to 30."
     )
     (
         "network.channel_heartbeat_minutes",
-        value<uint32_t>(&configured.network.channel_heartbeat_minutes),
+        value<uint32_t>(&nodeconf->network->channel_heartbeat_minutes),
         "The time between ping messages, defaults to 5."
     )
     (
         "network.channel_inactivity_minutes",
-        value<uint32_t>(&configured.network.channel_inactivity_minutes),
+        value<uint32_t>(&nodeconf->network->channel_inactivity_minutes),
         "The inactivity time limit for any connection, defaults to 30."
     )
     (
         "network.channel_expiration_minutes",
-        value<uint32_t>(&configured.network.channel_expiration_minutes),
+        value<uint32_t>(&nodeconf->network->channel_expiration_minutes),
         "The age limit for any connection, defaults to 1440."
     )
     (
         "network.host_pool_capacity",
-        value<uint32_t>(&configured.network.host_pool_capacity),
+        value<uint32_t>(&nodeconf->network->host_pool_capacity),
         "The maximum number of peer hosts in the pool, defaults to 10000."
     )
     (
         "network.hosts_file",
-        value<path>(&configured.network.hosts_file),
+        value<path>(&nodeconf->network->hosts_file),
         "The peer hosts cache file path, defaults to 'hosts.cache'."
     )
     (
         "network.self",
-        value<config::authority>(&configured.network.self),
+        value<config::authority>(&nodeconf->network->self),
         "The advertised public address of this node, defaults to none."
     )
     (
         "network.blacklist",
-        value<config::authority::list>(&configured.network.blacklists),
+        value<config::authority::list>(&nodeconf->network->blacklists),
         "IP address to disallow as a peer, multiple entries allowed."
     )
     (
         "network.peer",
-        value<config::endpoint::list>(&configured.network.peers),
+        value<config::endpoint::list>(&nodeconf->network->peers),
         "A persistent peer node, multiple entries allowed."
     )
     (
         "network.seed",
-        value<config::endpoint::list>(&configured.network.seeds),
+        value<config::endpoint::list>(&nodeconf->network->seeds),
         "A seed node for initializing the host pool, multiple entries allowed."
     )
 
     /* [database] */
     (
         "database.directory",
-        value<path>(&configured.database.directory),
+        value<path>(&nodeconf->database->directory),
         "The blockchain database directory, defaults to 'blockchain'."
     )
     (
         "database.flush_writes",
-        value<bool>(&configured.database.flush_writes),
+        value<bool>(&nodeconf->database->flush_writes),
         "Flush each write to disk, defaults to false."
     )
     (
         "database.file_growth_rate",
-        value<uint16_t>(&configured.database.file_growth_rate),
+        value<uint16_t>(&nodeconf->database->file_growth_rate),
         "Full database files increase by this percentage, defaults to 5."
     )
     (
         "database.block_table_buckets",
-        value<uint32_t>(&configured.database.block_table_buckets),
+        value<uint32_t>(&nodeconf->database->block_table_buckets),
         "Block hash table size, defaults to 650000."
     )
     (
         "database.transaction_table_buckets",
-        value<uint32_t>(&configured.database.transaction_table_buckets),
+        value<uint32_t>(&nodeconf->database->transaction_table_buckets),
         "Transaction hash table size, defaults to 110000000."
     )
     (
         "database.cache_capacity",
-        value<uint32_t>(&configured.database.cache_capacity),
+        value<uint32_t>(&nodeconf->database->cache_capacity),
         "The maximum number of entries in the unspent outputs cache, defaults to 10000."
     )
 
     /* [blockchain] */
     (
         "blockchain.cores",
-        value<uint32_t>(&configured.chain.cores),
+        value<uint32_t>(&nodeconf->chain->cores),
         "The number of cores dedicated to block validation, defaults to 0 (physical cores)."
     )
     (
         "blockchain.priority",
-        value<bool>(&configured.chain.priority),
+        value<bool>(&nodeconf->chain->priority),
         "Use high thread priority for block validation, defaults to true."
     )
     (
         "blockchain.use_libconsensus",
-        value<bool>(&configured.chain.use_libconsensus),
+        value<bool>(&nodeconf->chain->use_libconsensus),
         "Use libconsensus for script validation if integrated, defaults to false."
     )
     (
         "blockchain.reorganization_limit",
-        value<uint32_t>(&configured.chain.reorganization_limit),
+        value<uint32_t>(&nodeconf->chain->reorganization_limit),
         "The maximum reorganization depth, defaults to 0 (unlimited)."
     )
     (
         "blockchain.checkpoint",
-        value<config::checkpoint::list>(&configured.chain.checkpoints),
+        value<config::checkpoint::list>(&nodeconf->chain->checkpoints),
         "A hash:height checkpoint, multiple entries allowed."
     )
 
     /* [fork] */
     (
         "fork.difficult",
-        value<bool>(&configured.chain.difficult),
+        value<bool>(&nodeconf->chain->difficult),
         "Require difficult blocks, defaults to true (use false for testnet)."
     )
     (
         "fork.retarget",
-        value<bool>(&configured.chain.retarget),
+        value<bool>(&nodeconf->chain->retarget),
         "Retarget difficulty, defaults to true."
     )
     (
         "fork.bip16",
-        value<bool>(&configured.chain.bip16),
+        value<bool>(&nodeconf->chain->bip16),
         "Add pay-to-script-hash processing, defaults to true (soft fork)."
     )
     (
         "fork.bip30",
-        value<bool>(&configured.chain.bip30),
+        value<bool>(&nodeconf->chain->bip30),
         "Disallow collision of unspent transaction hashes, defaults to true (soft fork)."
     )
     (
         "fork.bip34",
-        value<bool>(&configured.chain.bip34),
+        value<bool>(&nodeconf->chain->bip34),
         "Require coinbase input includes block height, defaults to true (soft fork)."
     )
     (
         "fork.bip66",
-        value<bool>(&configured.chain.bip66),
+        value<bool>(&nodeconf->chain->bip66),
         "Require strict signature encoding, defaults to true (soft fork)."
     )
     (
         "fork.bip65",
-        value<bool>(&configured.chain.bip65),
+        value<bool>(&nodeconf->chain->bip65),
         "Add check-locktime-verify op code, defaults to true (soft fork)."
     )
     (
         "fork.bip90",
-        value<bool>(&configured.chain.bip90),
+        value<bool>(&nodeconf->chain->bip90),
         "Assume bip34, bip65, and bip66 activation if enabled, defaults to true (hard fork)."
     )
     (
         "fork.bip68",
-        value<bool>(&configured.chain.bip68),
+        value<bool>(&nodeconf->chain->bip68),
         "Add relative locktime enforcement, defaults to true (soft fork)."
     )
     (
         "fork.bip112",
-        value<bool>(&configured.chain.bip112),
+        value<bool>(&nodeconf->chain->bip112),
         "Add check-sequence-verify op code, defaults to true (soft fork)."
     )
     (
         "fork.bip113",
-        value<bool>(&configured.chain.bip113),
+        value<bool>(&nodeconf->chain->bip113),
         "Use median time past for locktime, defaults to true (soft fork)."
     )
     (
         "fork.bip141",
-        value<bool>(&configured.chain.bip141),
+        value<bool>(&nodeconf->chain->bip141),
         "Segregated witness consensus layer, defaults to true (soft fork)."
     )
     (
         "fork.bip143",
-        value<bool>(&configured.chain.bip143),
+        value<bool>(&nodeconf->chain->bip143),
         "Version 0 transaction digest, defaults to true (soft fork)."
     )
     (
         "fork.bip147",
-        value<bool>(&configured.chain.bip147),
+        value<bool>(&nodeconf->chain->bip147),
         "Prevent dummy value malleability, defaults to true (soft fork)."
     )
 
     /* [node] */
     (
         "node.maximum_deviation",
-        value<float>(&configured.node.maximum_deviation),
+        value<float>(&nodeconf->node->maximum_deviation),
         "The response rate standard deviation below which a peer is dropped, defaults to 1.5."
     )
     (
         "node.block_latency_seconds",
-        value<uint32_t>(&configured.node.block_latency_seconds),
+        value<uint32_t>(&nodeconf->node->block_latency_seconds),
         "The maximum time to wait for a requested block, defaults to 5."
     )
     (
         /* Internally this is blockchain, but it is conceptually a node setting. */
         "node.notify_limit_hours",
-        value<uint32_t>(&configured.chain.notify_limit_hours),
+        value<uint32_t>(&nodeconf->chain->notify_limit_hours),
         "Disable relay when top block age exceeds, defaults to 24 (0 disables)."
     )
     (
         /* Internally this is blockchain, but it is conceptually a node setting. */
         "node.byte_fee_satoshis",
-        value<float>(&configured.chain.byte_fee_satoshis),
+        value<float>(&nodeconf->chain->byte_fee_satoshis),
         "The minimum fee per byte, cumulative for conflicts, defaults to 1."
     )
     (
         /* Internally this is blockchain, but it is conceptually a node setting. */
         "node.sigop_fee_satoshis",
-        value<float>(&configured.chain.sigop_fee_satoshis),
+        value<float>(&nodeconf->chain->sigop_fee_satoshis),
         "The minimum fee per sigop, additional to byte fee, defaults to 100."
     )
     (
         /* Internally this is blockchain, but it is conceptually a node setting. */
         "node.minimum_output_satoshis",
-        value<uint64_t>(&configured.chain.minimum_output_satoshis),
+        value<uint64_t>(&nodeconf->chain->minimum_output_satoshis),
         "The minimum output value, defaults to 500."
     )
     (
         /* Internally this is network, but it is conceptually a node setting. */
         "node.relay_transactions",
-        value<bool>(&configured.network.relay_transactions),
+        value<bool>(&nodeconf->network->relay_transactions),
         "Request that peers relay transactions, defaults to false."
     )
     (
         "node.refresh_transactions",
-        value<bool>(&configured.node.refresh_transactions),
+        value<bool>(&nodeconf->node->refresh_transactions),
         "Request transactions on each channel start, defaults to false."
     );
 
     return description;
-}
-
-bool parser::parse(int argc, const char* argv[], std::ostream& error)
-{
-    try
-    {
-        auto file = false;
-        variables_map variables;
-        load_command_variables(variables, argc, argv);
-        load_environment_variables(variables, BN_ENVIRONMENT_VARIABLE_PREFIX);
-
-        // Don't load the rest if any of these options are specified.
-        if (!get_option(variables, BN_VERSION_VARIABLE) &&
-            !get_option(variables, BN_SETTINGS_VARIABLE) &&
-            !get_option(variables, BN_HELP_VARIABLE))
-        {
-            // Returns true if the settings were loaded from a file.
-            file = load_configuration_variables(variables, BN_CONFIG_VARIABLE);
-        }
-
-        // Update bound variables in metadata.settings.
-        notify(variables);
-
-        // Clear the config file path if it wasn't used.
-        if (!file)
-            configured.file.clear();
-    }
-    catch (const boost::program_options::error& e)
-    {
-        // This is obtained from boost, which circumvents our localization.
-        error << format_invalid_parameter(e.what()) << std::endl;
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace node

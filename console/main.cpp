@@ -18,7 +18,25 @@
  */
 #include <iostream>
 #include <bitcoin/node.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+#include <bitcoin/blockchain.hpp>
+#include <bitcoin/network.hpp>
+#include <bitcoin/node/full_node.hpp>
+#include <bitcoin/node/settings.hpp>
 #include "executor.hpp"
+
+using namespace boost::filesystem;
+using namespace boost::program_options;
+using namespace bc;
+using namespace bc::node;
+using namespace bc::blockchain;
+using namespace bc::chain;
+using namespace bc::config;
+using namespace bc::network;
+using namespace bc::database;
+
+libbitcoin::node::configuration configured;
 
 BC_USE_LIBBITCOIN_MAIN
 
@@ -31,16 +49,77 @@ BC_USE_LIBBITCOIN_MAIN
  */
 int bc::main(int argc, char* argv[])
 {
-    using namespace bc;
-    using namespace bc::node;
-
     set_utf8_stdio();
-    node::parser metadata(config::settings::mainnet);
-    const auto& args = const_cast<const char**>(argv);
 
-    if (!metadata.parse(argc, args, cerr))
-        return console_result::failure;
+    variables_map variables;
 
-    executor host(metadata, cin, cout, cerr);
-    return host.menu() ? console_result::okay : console_result::failure;
+    node::parser np(configured);
+    const auto options = np.load_options(&configured);
+    const auto arguments = np.load_arguments();
+
+    // command_line_parser documentation:
+    // https://www.boost.org/doc/libs/1_68_0/doc/html/program_options/tutorial.html
+    auto command_parser = command_line_parser(argc, argv).options(options)
+    /*.allow_unregistered()*/.positional(arguments);
+
+    // Boost.ProgramOptions explained:
+    // https://theboostcpplibraries.com/boost.program_options
+    boost::program_options::store(command_parser.run(), variables);
+
+    notify(variables);
+
+    if (!configured.regtest && !configured.testnet)
+    {
+        configured.init(config::settings::mainnet);
+    }
+    else if (configured.testnet)
+    {
+        configured.init(config::settings::testnet);
+    }
+    else
+    {
+        // The regression testing network
+        // https://github.com/libbitcoin/libbitcoin-server/wiki/Regtest-Configuration
+        configured.init(config::settings::regtest);
+    }
+
+    try
+    {
+        auto settings = np.load_settings(&configured);
+        auto file = false;
+        auto lenv = np.load_environment(&configured);
+        np.load_environment_variables(variables, BN_ENVIRONMENT_VARIABLE_PREFIX, &lenv);
+        
+        // Don't load the rest if any of these options are specified.
+        if (!np.get_option(variables, BN_VERSION_VARIABLE) &&
+            !np.get_option(variables, BN_SETTINGS_VARIABLE) &&
+            !np.get_option(variables, BN_HELP_VARIABLE))
+        {
+            // Returns true if the settings were loaded from a file.
+            file = np.load_configuration_variables(variables, BN_CONFIG_VARIABLE, &settings);
+        }
+        
+        // don't parse command-line parameters a second time
+        auto command_parser_b = command_line_parser(argc, argv);
+        command_parser_b.allow_unregistered().options(settings);
+        
+        boost::program_options::store(command_parser_b.run(), variables);
+        
+        notify(variables);
+        
+        // Clear the config file path if it wasn't used.
+        if (!file)
+            configured.file.clear();
+    }
+    catch (const boost::program_options::error& e)
+    {
+        // This is obtained from boost, which circumvents our localization.
+        cerr << "Exception: " << config::parser::format_invalid_parameter(e.what()) << std::endl;
+        return false;
+    }
+
+    executor host(np, cin, cout, cerr);
+    int ret = host.menu() ? console_result::okay : console_result::failure;
+
+    return ret;
 }

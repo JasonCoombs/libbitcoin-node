@@ -33,26 +33,19 @@ class BCN_API parser
   : public config::parser
 {
 public:
-    parser(config::settings context);
-    parser( configuration& defaults);
-
-    /// Parse all configuration into member settings.
-    virtual bool parse(int argc, const char* argv[], std::ostream& error);
+    parser(configuration&);
 
     /// Load command line options (named).
-    virtual options_metadata load_options();
-
+    options_metadata load_options(config::configuration *);
+    
     /// Load command line arguments (positional).
-    virtual arguments_metadata load_arguments();
-
+    arguments_metadata load_arguments();
+    
     /// Load configuration file settings.
-    virtual options_metadata load_settings();
+    options_metadata load_settings(config::configuration *);
 
     /// Load environment variable settings.
-    virtual options_metadata load_environment();
-
-    /// The populated configuration settings values.
-    configuration configured;
+    options_metadata load_environment(config::configuration *pconf);
 };
 
 } // namespace node
