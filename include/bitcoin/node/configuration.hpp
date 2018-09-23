@@ -51,22 +51,20 @@ public:
     void init(config::settings context);
 
     /// Options.
+    bool version;
+    boost::filesystem::path configfile;
+    bool settings;
     bool help;
     bool initchain;
     bool regtest;
     bool testnet;
-    bool settings;
-    bool version;
-
-    /// Options and environment vars.
-    boost::filesystem::path file;
 
     /// Settings.
-    node::settings *node;
+    libbitcoin::settings *bitcoin;
     blockchain::settings *chain;
+    node::settings *node;
     database::settings *database;
     network::settings *network;
-    libbitcoin::settings *bitcoin;
 };
 
 } // namespace node

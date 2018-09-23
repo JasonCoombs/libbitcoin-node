@@ -308,7 +308,7 @@ void executor::initialize_output()
     LOG_ERROR(LOG_NODE) << header;
     LOG_FATAL(LOG_NODE) << header;
 
-    const auto& file = configured.file;
+    const auto& file = configured.configfile;
 
     if (file.empty())
         LOG_INFO(LOG_NODE) << BN_USING_DEFAULT_CONFIG;

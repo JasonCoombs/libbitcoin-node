@@ -4,7 +4,7 @@
 _bn()
 {
     local current="${COMP_WORDS[COMP_CWORD]}"
-    local options=" --config --help --initchain --settings --version -c -h -i -s -v"
+    local options="--version --config --settings --help --initchain --regtest --testnet -v -c -s -h -i -r -t"
 
     COMPREPLY=( `compgen -W "$options" -- $current` )
 }

@@ -64,7 +64,7 @@ options_metadata parser::load_options(config::configuration *pconf)
          )
         (
          BN_CONFIG_VARIABLE ",c",
-         value<path>(&nodeconf->file),
+         value<path>(&nodeconf->configfile),
          "Specify path to a configuration settings file."
          )
         (
@@ -127,7 +127,7 @@ options_metadata parser::load_environment(config::configuration *pconf)
         // The case must match the other declarations for it to compose.
         // This composes with the cmdline options and inits to system path.
         BN_CONFIG_VARIABLE,
-        value<path>(&nodeconf->file)->composing()
+        value<path>(&nodeconf->configfile)->composing()
             ->default_value(config_default_path()),
         "The path to the configuration settings file."
     );

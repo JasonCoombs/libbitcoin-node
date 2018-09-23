@@ -28,17 +28,17 @@ namespace node {
 // Construct with defaults and no context
 configuration::configuration()
 {
+    version = false;
+    settings = false;
     help = false;
     initchain = false;
     regtest = false;
     testnet = false;
-    settings = false;
-    version = false;
-    node = NULL;
+    bitcoin = NULL;
     chain = NULL;
+    node = NULL;
     database = NULL;
     network = NULL;
-    bitcoin = NULL;
 }
 
 configuration::~configuration()

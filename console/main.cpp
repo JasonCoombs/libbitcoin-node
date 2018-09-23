@@ -52,8 +52,8 @@ int bc::main(int argc, char* argv[])
     set_utf8_stdio();
 
     variables_map variables;
-
     node::parser np(configured);
+
     const auto options = np.load_options(&configured);
     const auto arguments = np.load_arguments();
 
@@ -86,7 +86,7 @@ int bc::main(int argc, char* argv[])
     try
     {
         auto settings = np.load_settings(&configured);
-        auto file = false;
+        auto bfile = false;
         auto lenv = np.load_environment(&configured);
         np.load_environment_variables(variables, BN_ENVIRONMENT_VARIABLE_PREFIX, &lenv);
         
@@ -96,7 +96,7 @@ int bc::main(int argc, char* argv[])
             !np.get_option(variables, BN_HELP_VARIABLE))
         {
             // Returns true if the settings were loaded from a file.
-            file = np.load_configuration_variables(variables, BN_CONFIG_VARIABLE, &settings);
+            bfile = np.load_configuration_variables(variables, BN_CONFIG_VARIABLE, &settings);
         }
         
         // don't parse command-line parameters a second time
@@ -108,8 +108,8 @@ int bc::main(int argc, char* argv[])
         notify(variables);
         
         // Clear the config file path if it wasn't used.
-        if (!file)
-            configured.file.clear();
+        if (!bfile)
+            configured.configfile.clear();
     }
     catch (const boost::program_options::error& e)
     {
