@@ -203,7 +203,7 @@ bool executor::run()
         return false;
 
     // Now that the directory is verified we can create the node for it.
-    node_ = std::make_shared<full_node>(configured);
+    node_ = std::make_shared<full_node>(&configured);
 
     // Initialize broadcast to statistics server if configured.
     log::initialize_statsd(node_->thread_pool(),

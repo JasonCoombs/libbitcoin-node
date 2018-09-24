@@ -40,16 +40,16 @@ using namespace bc::network;
 using namespace boost::adaptors;
 using namespace std::placeholders;
 
-full_node::full_node( configuration& configuration)
-  : p2p(*configuration.network),
-    reservations_(configuration.network->minimum_connections(),
-        configuration.node->maximum_deviation,
-        configuration.node->block_latency_seconds),
-    chain_(thread_pool(), *configuration.chain, *configuration.database,
-        *configuration.bitcoin),
-    protocol_maximum_(configuration.network->protocol_maximum),
-    chain_settings_(*configuration.chain),
-    node_settings_(*configuration.node)
+    full_node::full_node( config::configuration *conf)
+  : p2p(*((configuration *)conf)->network),
+    reservations_(((configuration *)conf)->network->minimum_connections(),
+        ((configuration *)conf)->node->maximum_deviation,
+        ((configuration *)conf)->node->block_latency_seconds),
+    chain_(thread_pool(), *((configuration *)conf)->chain, *((configuration *)conf)->database,
+        *((configuration *)conf)->bitcoin),
+    protocol_maximum_(((configuration *)conf)->network->protocol_maximum),
+    chain_settings_(*((configuration *)conf)->chain),
+    node_settings_(*((configuration *)conf)->node)
 {
 }
 
