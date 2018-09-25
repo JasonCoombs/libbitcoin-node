@@ -60,7 +60,7 @@ int bc::main(int argc, char* argv[])
     // command_line_parser documentation:
     // https://www.boost.org/doc/libs/1_68_0/doc/html/program_options/tutorial.html
     auto command_parser = command_line_parser(argc, argv).options(options)
-    /*.allow_unregistered()*/.positional(arguments);
+    .allow_unregistered().positional(arguments);
 
     // Boost.ProgramOptions explained:
     // https://theboostcpplibraries.com/boost.program_options
@@ -101,7 +101,7 @@ int bc::main(int argc, char* argv[])
         
         // don't parse command-line parameters a second time
         auto command_parser_b = command_line_parser(argc, argv);
-        command_parser_b.allow_unregistered().options(settings);
+        command_parser_b.options(settings).allow_unregistered();
         
         boost::program_options::store(command_parser_b.run(), variables);
         
