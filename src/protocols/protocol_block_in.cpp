@@ -430,7 +430,7 @@ void protocol_block_in::handle_timeout(const code& ec)
 
 void protocol_block_in::handle_stop(const code&)
 {
-    LOG_VERBOSE(LOG_NETWORK)
+    LOG_VERBOSE(LOG_NODE)
         << "Stopped block_in protocol for [" << authority() << "].";
 }
 

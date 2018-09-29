@@ -144,6 +144,8 @@ reservation::list reservations::table() const
 // protected
 bool reservations::reserve(reservation::ptr minimal)
 {
+    const auto this_id = boost::this_thread::get_id();
+    
     // Intitialize the row set as late as possible.
     if (!initialized_)
     {
@@ -159,7 +161,8 @@ bool reservations::reserve(reservation::ptr minimal)
     if (!minimal->empty())
     {
         LOG_DEBUG(LOG_NODE)
-            << "Minimal (" << minimal ->slot() << ") is not empty.";
+        << this_id
+            << " Minimal (" << minimal ->slot() << ") is not empty.";
         return true;
     }
 
@@ -174,7 +177,8 @@ bool reservations::reserve(reservation::ptr minimal)
     if (reserved)
     {
         LOG_DEBUG(LOG_NODE)
-            << "Reserved " << minimal->size() << " blocks to slot ("
+            << this_id
+            << " Reserved " << minimal->size() << " blocks to slot ("
             << minimal->slot() << ").";
     }
 

@@ -320,6 +320,8 @@ void executor::initialize_output()
 bool executor::verify_directory()
 {
     error_code ec;
+    const char * testnet = "";
+
     if(configured.database)
     {
         const auto& directory = configured.database->directory;
@@ -329,7 +331,15 @@ bool executor::verify_directory()
 
         if (ec.value() == directory_not_found)
         {
-            LOG_ERROR(LOG_NODE) << format(BN_UNINITIALIZED_CHAIN) % directory;
+            if (configured.testnet)
+            {
+                testnet = "--testnet";
+            }
+            else if (configured.regtest)
+            {
+                testnet = "--regtest";
+            }
+            LOG_ERROR(LOG_NODE) << format(BN_UNINITIALIZED_CHAIN) % directory % testnet;
             return false;
         }
 

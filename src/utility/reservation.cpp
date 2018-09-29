@@ -284,6 +284,13 @@ message::get_data reservation::request()
 bool reservation::find_height_and_erase(const hash_digest& hash,
     size_t& out_height)
 {
+    const auto this_id = boost::this_thread::get_id();
+
+    LOG_VERBOSE(LOG_BLOCKCHAIN)
+    << this_id
+    << " reservation::find_height_and_erase() with mutex_ of "
+    << &hash_mutex_ << " calling lock_upgrade()";
+    
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     hash_mutex_.lock_upgrade();
@@ -292,6 +299,10 @@ bool reservation::find_height_and_erase(const hash_digest& hash,
 
     if (it == heights_.left.end())
     {
+        LOG_VERBOSE(LOG_BLOCKCHAIN)
+        << this_id
+        << " reservation::find_height_and_erase() with mutex_ of "
+        << &hash_mutex_ << " calling unlock_upgrade()";
         hash_mutex_.unlock_upgrade();
         //---------------------------------------------------------------------
         return false;
@@ -299,9 +310,19 @@ bool reservation::find_height_and_erase(const hash_digest& hash,
 
     out_height = it->second;
 
+    LOG_VERBOSE(LOG_BLOCKCHAIN)
+    << this_id
+    << " reservation::find_height_and_erase() with mutex_ of "
+    << &hash_mutex_ << " calling unlock_upgrade_and_lock()";
+
     hash_mutex_.unlock_upgrade_and_lock();
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     heights_.left.erase(it);
+
+    LOG_VERBOSE(LOG_BLOCKCHAIN)
+    << this_id
+    << " reservation::find_height_and_erase() with mutex_ of "
+    << &hash_mutex_ << " calling unlock()";
 
     hash_mutex_.unlock();
     ///////////////////////////////////////////////////////////////////////////
@@ -312,6 +333,12 @@ bool reservation::find_height_and_erase(const hash_digest& hash,
 code reservation::import(safe_chain& chain, block_const_ptr block,
     size_t height)
 {
+    const auto this_id = boost::this_thread::get_id();
+    
+    LOG_VERBOSE(LOG_BLOCKCHAIN)
+    << this_id
+    << " reservation::import() calling chain.organize() at height: " << height;
+    
     const auto start = now();
 
     //#########################################################################
@@ -319,7 +346,14 @@ code reservation::import(safe_chain& chain, block_const_ptr block,
     //#########################################################################
 
     if (ec)
+    {
+        LOG_ERROR(LOG_NODE)
+        << this_id
+        << " error reservation::import() called chain.organize()  at height: " << height
+        << " " << ec << " " << ec.message();
+
         return ec;
+    }
 
     // Recompute rate performance.
     auto size = block->serialized_size(message::version::level::canonical);

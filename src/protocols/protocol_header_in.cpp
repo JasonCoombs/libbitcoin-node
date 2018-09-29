@@ -150,6 +150,7 @@ bool protocol_header_in::handle_receive_headers(const code& ec,
 
 void protocol_header_in::store_header(size_t index, headers_const_ptr message)
 {
+    const auto this_id = boost::this_thread::get_id();
     const auto size = message->elements().size();
     BITCOIN_ASSERT(size != 0);
 
@@ -159,7 +160,8 @@ void protocol_header_in::store_header(size_t index, headers_const_ptr message)
 
         // This logs for each channel for each header.
         LOG_VERBOSE(LOG_NODE)
-            << "Processed (" << size << ") headers up to ["
+            << this_id
+            << " Processed (" << size << ") headers up to ["
             << encode_hash(last_hash) << "] from [" << authority() << "].";
 
         // The timer handles the case where the last header is the 2000th.
@@ -176,13 +178,15 @@ void protocol_header_in::store_header(size_t index, headers_const_ptr message)
     // The unshared_pointer is safe because the message is captured with it.
     // This allows metadata update on the header within the existing vector
     // while maintaining interface consistency with blockchain.
-    chain_.organize(unsafe_pointer(message->elements()[index]),
+    chain_.organize((header_const_ptr)unsafe_pointer(message->elements()[index]),
         BIND3(handle_store_header, _1, index, message));
 }
 
 void protocol_header_in::handle_store_header(const code& ec, size_t index,
     headers_const_ptr message)
 {
+    const auto this_id = boost::this_thread::get_id();
+    
     if (stopped(ec))
         return;
 
@@ -196,14 +200,18 @@ void protocol_header_in::handle_store_header(const code& ec, size_t index,
         if (!message->is_sequential())
         {
             LOG_DEBUG(LOG_NODE)
-                << "Disordered headers message from [" << authority() << "]";
+                << this_id
+                << " protocol_header_in::handle_store_header()"
+                << " Disordered headers message from [" << authority() << "] " << ec.message();
             stop(ec);
             return;
         }
 
         // Try to fill the gap between the current header tree and this header.
         LOG_DEBUG(LOG_NODE)
-            << "Orphan header [" << encoded << "] from [" << authority() << "]";
+            << this_id
+            << " protocol_header_in::handle_store_header()"
+            << " Orphan header [" << encoded << "] from [" << authority() << "] " << ec.message();
         send_top_get_headers(hash);
         return;
     }
@@ -211,21 +219,28 @@ void protocol_header_in::handle_store_header(const code& ec, size_t index,
     {
         // Store in header pool to allow longer chain to build.
         LOG_DEBUG(LOG_NODE)
-            << "Pooled header [" << encoded << "] from [" << authority()
+            << this_id
+            << " protocol_header_in::handle_store_header()"
+            << " Pooled header [" << encoded << "] from [" << authority()
             << "] " << ec.message();
     }
     if (ec == error::duplicate_block)
     {
         // Allow duplicate header to continue as desirable race with peers.
-        LOG_VERBOSE(LOG_NODE)
-            << "Rejected duplicate header [" << encoded << "] from ["
-            << authority() << "]";
+/*        LOG_VERBOSE(LOG_NODE)
+            << this_id
+            << " protocol_header_in::handle_store_header()"
+            << " Rejected duplicate header [" << encoded << "] from ["
+            << authority() << "] " << ec.message();
+ */
     }
     else if (ec)
     {
         // Invalid header from peer, disconnect.
         LOG_DEBUG(LOG_NODE)
-            << "Rejected header [" << encoded << "] from [" << authority()
+            << this_id
+            << " protocol_header_in::handle_store_header()"
+            << " Rejected header [" << encoded << "] from [" << authority()
             << "] " << ec.message();
         stop(ec);
         return;
@@ -243,7 +258,8 @@ void protocol_header_in::handle_store_header(const code& ec, size_t index,
             const auto checked = state->is_under_checkpoint() ? "*" : "";
 
             LOG_INFO(LOG_NODE)
-                << "Header #" << state->height() << " ["
+                << this_id
+                << " Header #" << state->height() << " ["
                 << encoded << "] from [" << authority() << "] ("
                 << state->enabled_forks() << checked << ", "
                 << state->minimum_block_version() << ").";
@@ -303,7 +319,7 @@ void protocol_header_in::send_send_headers()
     if (sending_headers_.exchange(true))
         return;
 
-    LOG_DEBUG(LOG_NETWORK)
+    LOG_DEBUG(LOG_NODE)
         << "Headers are current for peer [" << authority() << "].";
 
     if (send_headers_)
@@ -315,7 +331,7 @@ void protocol_header_in::send_send_headers()
 
 void protocol_header_in::handle_stop(const code&)
 {
-    LOG_VERBOSE(LOG_NETWORK)
+    LOG_VERBOSE(LOG_NODE)
         << "Stopped header_in protocol for [" << authority() << "].";
 }
 

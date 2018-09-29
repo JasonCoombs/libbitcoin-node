@@ -381,11 +381,12 @@ options_metadata parser::load_settings(config::configuration *pconf)
     )
 
     /* [fork] */
-    (
+/*    (
         "fork.difficult",
         value<bool>(&nodeconf->chain->difficult),
         "Require difficult blocks, defaults to true (use false for testnet)."
     )
+ */
     (
         "fork.retarget",
         value<bool>(&nodeconf->chain->retarget),

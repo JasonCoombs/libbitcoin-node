@@ -71,6 +71,8 @@ void protocol_block_sync::start()
 
 void protocol_block_sync::send_get_blocks()
 {
+    const auto this_id = boost::this_thread::get_id();
+    
     if (stopped())
         return;
 
@@ -88,7 +90,8 @@ void protocol_block_sync::send_get_blocks()
         return;
 
     LOG_DEBUG(LOG_NODE)
-        << "Sending request of " << request.inventories().size()
+        << this_id
+        << " Sending request of " << request.inventories().size()
         << " hashes for slot (" << reservation_->slot() << ").";
 
     SEND2(request, handle_send, _1, request.command);
@@ -97,14 +100,17 @@ void protocol_block_sync::send_get_blocks()
 bool protocol_block_sync::handle_receive_block(const code& ec,
     block_const_ptr message)
 {
+    const auto this_id = boost::this_thread::get_id();
+
     if (stopped(ec))
         return false;
 
     if (ec)
     {
         LOG_ERROR(LOG_NODE)
-            << "Failure in block receive for slot (" << reservation_->slot()
-            << ") " << ec.message();
+            << this_id
+            << " Failure in block receive for slot (" << reservation_->slot()
+            << ") " << ec << " " << ec.message();
         stop(ec);
         return false;
     }
@@ -113,7 +119,8 @@ bool protocol_block_sync::handle_receive_block(const code& ec,
     if (reservation_->stopped())
     {
         LOG_DEBUG(LOG_NODE)
-            << "Restarting partitioned slot (" << reservation_->slot()
+            << this_id
+            << " Restarting partitioned slot (" << reservation_->slot()
             << ") : [" << reservation_->size() << "]";
         stop(error::channel_stopped);
         return false;
@@ -127,11 +134,17 @@ bool protocol_block_sync::handle_receive_block(const code& ec,
     if (!reservation_->find_height_and_erase(message->hash(), height))
     {
         LOG_DEBUG(LOG_NODE)
-            << "Unrequested or partitioned block on slot ("
+            << this_id
+            << " Unrequested or partitioned block on slot ("
             << reservation_->slot() << ").";
         stop(error::channel_stopped);
         return false;
     }
+
+    LOG_DEBUG(LOG_NODE)
+    << this_id
+    << " calling reservation_->import() at height: "
+    << height;
 
     // Add the block's transactions to the store.
     // If this is the validation target then validator advances here.
@@ -144,8 +157,9 @@ bool protocol_block_sync::handle_receive_block(const code& ec,
     if (error_code)
     {
         LOG_FATAL(LOG_NODE)
-            << "Failure importing block for slot (" << reservation_->slot()
-            << "), store is now corrupted: " << error_code.message();
+            << this_id
+            << " Failure importing block for slot (" << reservation_->slot()
+            << "), store is now corrupted: " << error_code << " " << error_code.message();
         stop(error_code);
         return false;
     }
